@@ -1,0 +1,149 @@
+---
+title: "Class Project: Multiple Linear Regression on Market Share data"
+author: "Ashwin Rathore"
+date: "07/09/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+ Importing data from market_share.xlsx file and creating a dataframe.
+```{r}
+library("readxl")
+ms <- read_excel("market_share.xlsx")
+ms =within(ms, rm(idnum))
+ms$month <- as.numeric(as.factor(ms$month))
+ms
+```
+
+Applying linear regression between market share and the rest of the covariates one by one to find the relationship.
+```{r}
+lm.price <- lm(ms$marketshare ~ ms$price, data = ms)
+summ.price <- summary(lm.price)
+summ.price
+
+lm.gnrpoints <- lm(ms$marketshare ~ ms$gnrpoints, data = ms)
+summ.gnrpoints <- summary(lm.gnrpoints)
+summ.gnrpoints
+
+lm.discount <- lm(ms$marketshare ~ ms$discount, data = ms)
+summ.discount <- summary(lm.discount)
+summ.discount
+
+lm.promotion <- lm(ms$marketshare ~ ms$promotion, data = ms)
+summ.promotion <- summary(lm.promotion)
+summ.promotion
+
+lm.month <- lm(ms$marketshare ~ ms$month, data = ms)
+summ.month <- summary(lm.month)
+summ.month
+
+lm.year <- lm(ms$marketshare ~ ms$year, data = ms)
+summ.year <- summary(lm.year)
+summ.year
+```
+
+<!-- Plotting estimated regression function: -->
+
+<!-- ```{r} -->
+<!-- plot(senic$infection_risk ~ senic$length_of_stay) -->
+<!-- abline(0.74430  , 0.37422) -->
+<!-- abline(lmsenic1) -->
+
+<!-- plot(senic$ava_facilities ~ senic$length_of_stay) -->
+<!-- abline(15.8795  , 2.8274) -->
+<!-- abline(lmsenic2) -->
+
+<!-- plot(senic$xray_ratio ~ senic$length_of_stay) -->
+<!-- abline(44.2440  , 3.8747) -->
+<!-- abline(lmsenic3) -->
+<!-- ``` -->
+
+Building the “best" regression model for Y
+
+```{r}
+library(leaps)
+b <- regsubsets(ms$marketshare ~., data = ms, nvmax=6)
+rs <- summary(b)
+rs$rsq
+plot(rs$rss,xlab='No. of Variables',ylab='RSS',type='l')
+plot(rs$cp,xlab='No. of Variables',ylab='Cp',type='l')
+which.min(rs$cp)
+points(3,rs$cp[3],pch=19,col='red')
+plot(b,scale='Cp')
+
+```
+The best model according to both R^2 and Cp is the one that uses price, discount, promotion, month and year. We can remove teh gnrpoints as it does not relate much with the market share.
+
+Fitting the model.
+
+
+```{r}
+ms_data <- data.frame(ms$price, ms$discount, ms$promotion, ms$month, ms$year)
+library(VIF)
+vif(ms_data)
+```
+A commonly used practice is if a VIF is > 10, you have high multicollinearity. In our case, with values around 0, we are in good shape, and can proceed with our regression.
+
+– Outliers and influential points
+
+```{r}
+lmms <- lm(ms$marketshare ~ ms$price+ ms$discount+ ms$promotion+ ms$month+ ms$year, data = ms)
+plot(lmms, 5)
+```
+In the Residuals vs Leverage plot, no influential points are outside the Cook’s distance lines (a red dashed
+line). Thus we can assume there are no outliers in the data.
+
+
+– Appropriateness of predictors (i.e., is any transformation of predictors necessary?)
+
+```{r}
+plot(lmms, 1)
+```
+
+<!-- There is no pattern in the residual plot in the graph and the red line is almost horizontal around 0. Hence -->
+<!-- we can assume the linear relationship between ACT and GPA (except 47 and 112 which are outliers). -->
+
+<!-- – Normality of residuals -->
+
+
+```{r}
+plot(lmms, 2)
+```
+
+<!-- In Normal QQ plot, all the points fall approximately along this reference line except 2 points as we noticed, 47 and 112(which are outliers), so we can assume normality. -->
+<!-- plot(lmgpa, 3) -->
+
+– Constant variance of residuals
+
+```{r}
+plot(lmms, 3)
+```
+<!-- It can be seen in the Scale-location plot that the variability (variances) of the residual points is constant -->
+<!-- with the value of the fitted outcome variable, suggesting constant variances in the residuals errorsThus we -->
+<!-- can see Homogeneity of variance(except 47 and 112 which are outliers). . -->
+
+
+
+<!-- 7. Provide an intuitive interpretation of your final model. In other words, explain your findings to me as if -->
+<!-- I have a minimal working knowledge of statistics. -->
+
+<!-- Ans: In the dataset, we wanted to know if Average length of stay in a hospital (Y) is related to infection risk, -->
+<!-- available facilities and services, and routine chest X-ray ratio or not. If yes, which combination of these factors are important to affect the Y. Thus we built a regression model to check the dependency of Y on these factors. We found out that the combination of all 3 of these factors plays a crucial role in obtaining Y and thus we made a model that can predict Y on the basis of these 3 variables. Also, we found out some outliers in our analysis (record 47 and 112 ) which can be removed to make data more coherent for prediction. -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
